@@ -8,6 +8,7 @@ import {
 import { Box, Button, CircularProgress, Grid, Typography } from '@mui/material';
 import { useMemo, useState } from 'react';
 import { VolcanoJob } from '../../resources/job';
+import { VolcanoNamespaceQueue } from '../../resources/namespacequeue';
 import { VolcanoPodGroup } from '../../resources/podgroup';
 import { VolcanoQueue } from '../../resources/queue';
 import { getJobStatusColor, getPodGroupStatusColor } from '../../utils/status';
@@ -75,6 +76,8 @@ export default function Overview() {
   const [jobs, jobsError] = VolcanoJob.useList();
   const [queues, queuesError] = VolcanoQueue.useList();
   const [podGroups, podGroupsError] = VolcanoPodGroup.useList();
+  // Optional: stays null when the NamespaceQueue CRD is not installed, which hides its card.
+  const [namespaceQueues] = VolcanoNamespaceQueue.useList();
 
   const isLoading =
     (jobs === null && !jobsError) ||
@@ -83,6 +86,10 @@ export default function Overview() {
 
   const jobCounts = useMemo(() => countBy((jobs || []).map(job => job.phase)), [jobs]);
   const queueCounts = useMemo(() => countBy((queues || []).map(queue => queue.state)), [queues]);
+  const namespaceQueueCounts = useMemo(
+    () => countBy((namespaceQueues || []).map(namespaceQueue => namespaceQueue.state)),
+    [namespaceQueues]
+  );
   const podGroupCounts = useMemo(
     () => countBy((podGroups || []).map(podGroup => podGroup.phase)),
     [podGroups]
@@ -159,6 +166,20 @@ export default function Overview() {
               }, closed ${queueCounts.Closed || 0}`}
             />
           </Grid>
+          {namespaceQueues && (
+            <Grid item xs={12} sm={6} md={3}>
+              <SummaryCard
+                title="NamespaceQueues"
+                value={namespaceQueues.length}
+                icon="mdi:format-list-bulleted"
+                subtitle={`Open ${namespaceQueueCounts.Open || 0}, closing ${
+                  namespaceQueueCounts.Closing || 0
+                }, closed ${namespaceQueueCounts.Closed || 0}, unknown ${
+                  namespaceQueueCounts.Unknown || 0
+                }`}
+              />
+            </Grid>
+          )}
           <Grid item xs={12} sm={6} md={3}>
             <SummaryCard
               title="PodGroups"
